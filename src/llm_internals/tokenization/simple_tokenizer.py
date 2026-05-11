@@ -1,9 +1,8 @@
 import re
 
-with open("../../../data/the-verdict.txt", "r", encoding="utf-8") as f:
-    raw_text = f.read()
+TOKEN_SPLIT_PATTERN = r'([,.:;?_!"()\']|--|\s)'
 
-preprocessed = re.split(r'([,.:;?_!"()\']|--|\s)', raw_text)
-preprocessed = [item for item in preprocessed if item.strip()]
-
-print(preprocessed[:30])
+def tokenize(raw_text: str) -> list[str]:
+    """Split text into tokens."""
+    preprocessed = re.split(TOKEN_SPLIT_PATTERN, raw_text)
+    return [item.strip() for item in preprocessed if item.strip()]

@@ -1,6 +1,9 @@
 # Raw data text files
 data/*.txt
 
+# Experiments
+experiments/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

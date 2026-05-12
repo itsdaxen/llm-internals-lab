@@ -10,7 +10,7 @@ def tokenize(raw_text: str) -> list[str]:
     return [item.strip() for item in preprocessed if item.strip()]
 
 
-class SimpleTokenizerV1:
+class SimpleTokenizer:
     """A simple tokenizer that can encode and decode (convert text to IDs and vice versa)."""
 
     def __init__(self, vocab: dict[str, int]):
@@ -18,7 +18,13 @@ class SimpleTokenizerV1:
         self.int_to_str = {i: s for s, i in vocab.items()}
 
     def encode(self, text: str) -> list[int]:
-        ids = [self.str_to_int[token] for token in tokenize(text)]
+        preprocessed = tokenize(text)
+
+        # Use 'get' to look up value for 'token', if not found return id for '<|unk|>'
+        ids = [
+            self.str_to_int.get(token, self.str_to_int["<|unk|>"])
+            for token in preprocessed
+        ]
         return ids
 
     def decode(self, ids: list[int]) -> str:

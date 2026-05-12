@@ -1,4 +1,4 @@
-from llm_internals.tokenization.simple_tokenizer import SimpleTokenizerV1, tokenize
+from llm_internals.tokenization.simple_tokenizer import SimpleTokenizer, tokenize
 from llm_internals.tokenization.vocabulary_builder import build_vocab
 
 
@@ -27,8 +27,9 @@ def test_tokenizer_encodes_text_to_ids():
         ",": 1,
         "world": 2,
         ".": 3,
+        "<|unk|>": 4,
     }
-    tokenizer = SimpleTokenizerV1(vocab)
+    tokenizer = SimpleTokenizer(vocab)
 
     ids = tokenizer.encode("Hello, world.")
 
@@ -41,8 +42,9 @@ def test_tokenizer_decodes_ids_to_text():
         ",": 1,
         "world": 2,
         ".": 3,
+        "<|unk|>": 4,
     }
-    tokenizer = SimpleTokenizerV1(vocab)
+    tokenizer = SimpleTokenizer(vocab)
 
     text = tokenizer.decode([0, 1, 2, 3])
 
@@ -83,3 +85,37 @@ def test_build_vocab_returns_token_to_id_mapping():
         "<|endoftext|>": 9,
         "<|unk|>": 10,
     }
+
+
+def test_tokenizer_handles_unknown_tokens_and_endoftext():
+    raw_text = (
+        "Hello! do you like to drink green tea while sitting in the terrace of palace?"
+    )
+    vocab = build_vocab(raw_text, special_tokens=["<|endoftext|>", "<|unk|>"])
+
+    text1 = "Hello, do you like tea?"
+    text2 = "In the sunlit terraces of the palace."
+    text = " <|endoftext|> ".join((text1, text2))
+
+    tokenizer = SimpleTokenizer(vocab)
+
+    ids = tokenizer.encode(text)
+
+    assert ids == [
+        vocab["Hello"],
+        vocab["<|unk|>"],
+        vocab["do"],
+        vocab["you"],
+        vocab["like"],
+        vocab["tea"],
+        vocab["?"],
+        vocab["<|endoftext|>"],
+        vocab["<|unk|>"],
+        vocab["the"],
+        vocab["<|unk|>"],
+        vocab["<|unk|>"],
+        vocab["of"],
+        vocab["the"],
+        vocab["palace"],
+        vocab["<|unk|>"],
+    ]

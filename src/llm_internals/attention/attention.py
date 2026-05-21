@@ -1,24 +1,60 @@
 import torch
+import torch.nn as nn
 
 
-def simple_compute_attention(input_tensors: torch.Tensor) -> torch.Tensor:
+class SelfAttention(nn.Module):
     """
-    Compute simplified self-attention context vectors.
+    Scaled dot-product self-attention using trainable Q/K/V linear projections.
+
+    This module projects input token embeddings into query, key, and value
+    representations using PyTorch Linear layers. It then computes attention scores
+    from query-key similarity, normalizes them into attention weights, and uses
+    those weights to produce context vectors from the values.
 
     Args:
-        input_tensors: Tensor of shape [batch_size, max_length, embedding_dim].
+        d_in: Size of each input token embedding.
+        d_out: Size of each query, key, value, and context vector.
+        qkv_bias: Whether to include bias terms in the query, key, and value projections.
+
+    Input:
+        x: Tensor of shape [batch_size, max_length, d_in].
 
     Returns:
-        Context vectors of shape [batch_size, max_length, embedding_dim].
+        Tensor of shape [batch_size, max_length, d_out] containing context vectors.
     """
 
-    # Compute raw attention scores by comparing every token with every other token.
-    attn_scores = input_tensors @ input_tensors.transpose(-2, -1)
+    def __init__(self, d_in, d_out, qkv_bias=False):
+        super().__init__()
+        # Create trainable linear projection matrix for creating query vectors
+        self.W_query = nn.Linear(d_in, d_out, bias=qkv_bias)
+        # reate trainable linear projection matrix for creating key vectors
+        self.W_key = nn.Linear(d_in, d_out, bias=qkv_bias)
+        # reate trainable linear projection matrix for creating value vectors
+        self.W_value = nn.Linear(d_in, d_out, bias=qkv_bias)
 
-    # Normalize each row into attention weights.
-    attn_weights = torch.softmax(attn_scores, dim=-1)
+    def forward(self, x):
+        """
+        Compute context-aware token representations using self-attention.
 
-    # Compute one context vector per token as a weighted sum of all input vectors.
-    context_vectors = attn_weights @ input_tensors
+        Args:
+            x: Input tensor of shape [batch_size, max_length, d_in].
 
-    return context_vectors
+        Returns:
+            Context vectors of shape [batch_size, max_length, d_out].
+        """
+
+        # Project each input token into key, query, and value spaces.
+        keys = self.W_key(x)
+        queries = self.W_query(x)
+        values = self.W_value(x)
+
+        # Compute raw attention scores by comparing each query with every key.
+        attn_scores = queries @ keys.transpose(-2, -1)
+
+        # Scale scores to prevent softmax from becoming too sharp, then normalize across the token dimension.
+        attn_weights = torch.softmax(attn_scores / keys.shape[-1] ** 0.5, dim=-1)
+
+        # Mix value vectors according to the attention weights and create a weighted combination of all value vectors
+        context_vec = attn_weights @ values
+
+        return context_vec
